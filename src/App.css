@@ -1,0 +1,377 @@
+:root {
+  --ink: #092327;
+  --surface-dark: #0b5351;
+  --accent: #00a9a5;
+  --line: #4e8098;
+  --tint: #90c2e7;
+  --page-bg: #f3f8fb;
+  --white: #ffffff;
+
+  --font-ui: "Space Grotesk", system-ui, sans-serif;
+  --font-num: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  background: var(--page-bg);
+  min-height: 100vh;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-ui);
+  color: var(--ink);
+}
+
+.app {
+  min-height: 100vh;
+  text-align: left;
+}
+
+/* ---------- Barra superior ---------- */
+
+.topbar {
+  background: var(--surface-dark);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.75rem;
+  height: 3.75rem;
+}
+
+.topbar .brand {
+  font-weight: 600;
+  font-size: 1.05rem;
+  letter-spacing: 0.01em;
+}
+
+.topbar nav {
+  display: flex;
+  gap: 1.75rem;
+  height: 100%;
+}
+
+.topbar nav button {
+  all: unset;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.62);
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  font-weight: 500;
+  border-bottom: 2px solid transparent;
+  padding: 0 0.1rem;
+}
+
+.topbar nav button:hover {
+  color: var(--white);
+}
+
+.topbar nav button.active {
+  color: var(--white);
+  border-bottom-color: var(--accent);
+}
+
+/* ---------- Contenido ---------- */
+
+main {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 2.5rem 1.75rem 4rem;
+}
+
+main h1 {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 0.3rem;
+}
+
+.subtitle {
+  color: var(--line);
+  font-size: 0.92rem;
+  margin: 0 0 2rem;
+}
+
+.field-row {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.field .field-label {
+  font-size: 0.82rem;
+  color: var(--line);
+}
+
+.field .spacer {
+  font-size: 0.82rem;
+  visibility: hidden;
+  line-height: 1;
+}
+
+input,
+select {
+  font-family: var(--font-ui);
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--tint);
+  border-radius: 4px;
+  background: var(--white);
+  color: var(--ink);
+  font-size: 0.95rem;
+  height: 2.5rem;
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 169, 165, 0.18);
+}
+
+button {
+  font-family: var(--font-ui);
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 4px;
+  background: var(--accent);
+  color: var(--white);
+  font-weight: 600;
+  font-size: 0.92rem;
+  height: 2.5rem;
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--surface-dark);
+}
+
+button.secondary {
+  background: transparent;
+  color: var(--surface-dark);
+  border: 1px solid var(--tint);
+}
+
+button.secondary:hover {
+  background: var(--white);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ---------- Insignia de estado (Autorización) ---------- */
+
+.status-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-radius: 4px;
+  margin: 1.5rem 0;
+  border: 1px solid var(--tint);
+}
+
+.status-banner .dot {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-banner.si {
+  background: rgba(0, 169, 165, 0.08);
+  border-color: var(--accent);
+}
+.status-banner.si .dot {
+  background: var(--accent);
+}
+
+.status-banner.no {
+  background: rgba(9, 35, 39, 0.04);
+  border-color: var(--line);
+}
+.status-banner.no .dot {
+  background: var(--line);
+}
+
+.status-banner strong {
+  font-size: 0.98rem;
+}
+
+.status-banner span.detail {
+  color: var(--line);
+  font-size: 0.88rem;
+}
+
+hr.divider {
+  border: none;
+  border-top: 1px solid var(--tint);
+  margin: 2rem 0;
+}
+
+/* ---------- Registrar venta: dos columnas ---------- */
+
+.venta-layout {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+@media (max-width: 720px) {
+  .venta-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.producto-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.producto-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--tint);
+}
+
+.producto-row .nombre {
+  font-size: 0.95rem;
+}
+
+.producto-row .unidad {
+  color: var(--line);
+  font-size: 0.8rem;
+}
+
+.producto-row .precio {
+  font-family: var(--font-num);
+  font-size: 0.9rem;
+  color: var(--surface-dark);
+  text-align: right;
+  min-width: 5.5rem;
+}
+
+.producto-row input[type="number"] {
+  width: 4.5rem;
+  height: 2.2rem;
+  text-align: center;
+  font-family: var(--font-num);
+}
+
+/* ---------- Ticket ---------- */
+
+.ticket {
+  background: var(--surface-dark);
+  color: var(--white);
+  border-radius: 6px;
+  padding: 1.5rem;
+  position: sticky;
+  top: 2rem;
+}
+
+.ticket h2 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 1rem;
+  color: var(--white);
+}
+
+.ticket .empty {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.88rem;
+  padding: 1.5rem 0;
+  text-align: center;
+}
+
+.ticket-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.88rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.18);
+}
+
+.ticket-line .cant {
+  color: rgba(255, 255, 255, 0.6);
+  font-family: var(--font-num);
+}
+
+.ticket-line .subtotal {
+  font-family: var(--font-num);
+  margin-left: auto;
+}
+
+.ticket-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 1rem 0 1.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.ticket-total .label {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.ticket-total .value {
+  font-family: var(--font-num);
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.ticket button {
+  width: 100%;
+}
+
+.ticket button:disabled {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.4);
+  cursor: not-allowed;
+}
+
+.feedback {
+  font-size: 0.88rem;
+  margin-top: 0.85rem;
+}
+
+.feedback.ok {
+  color: var(--accent);
+}
+
+.feedback.error {
+  color: #ffb199;
+}
+
+main .error {
+  color: #c62828;
+  font-size: 0.88rem;
+  margin-top: 0.75rem;
+}
+
+main .ok {
+  color: var(--surface-dark);
+  font-size: 0.88rem;
+  margin-top: 0.75rem;
+}
