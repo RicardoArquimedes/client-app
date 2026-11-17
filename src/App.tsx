@@ -3,6 +3,7 @@ import "./App.css";
 import {
   autorizarVendedor,
   consultarAutorizacion,
+  consultarHistorialCliente,
   listarClientes,
   listarProductosDisponibles,
   registrarVenta,
@@ -10,10 +11,28 @@ import {
 import type { Cliente, Producto, Venta } from "./types";
 import { Loader } from "./components/Loader";
 
-type Tab = "auth" | "venta";
+type Tab = "auth" | "venta" | "historial";
 
 function money(n: number) {
   return n.toLocaleString("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+}
+
+// El backend serializa el enum EstadoVenta como número (0 Pendiente, 1 Confirmada,
+// 2 Entregada, 3 Cancelada), no como texto.
+const ESTADOS: Record<number, string> = {
+  0: "Pendiente",
+  1: "Confirmada",
+  2: "Entregada",
+  3: "Cancelada",
+};
+
+function estadoLabel(estado: number | string): string {
+  if (typeof estado === "number") return ESTADOS[estado] ?? `Estado ${estado}`;
+  return estado;
+}
+
+function estadoClass(estado: number | string): string {
+  return estadoLabel(estado).toLowerCase();
 }
 
 function AutorizacionPanel() {
@@ -153,12 +172,14 @@ function VentaPanel() {
   );
 
   const cambiarCantidad = (idProducto: string, cantidad: number) => {
+    // Si el cliente retoma el carrito después de ver el recibo de la venta
+    // anterior, ese recibo deja de mostrarse (vuelve a verse el carrito vivo).
+    if (venta) setVenta(null);
     setCantidades((prev) => ({ ...prev, [idProducto]: Math.max(0, cantidad) }));
   };
 
   const enviarVenta = async () => {
     setError("");
-    setVenta(null);
     if (!idCliente || lineas.length === 0) {
       setError("Selecciona un cliente y al menos un producto.");
       return;
@@ -179,6 +200,10 @@ function VentaPanel() {
       setCargando(false);
     }
   };
+
+  // Mientras no haya líneas nuevas en el carrito, el ticket muestra el recibo
+  // de la última venta confirmada en lugar de quedar vacío en "$0".
+  const mostrandoRecibo = lineas.length === 0 && venta !== null;
 
   return (
     <>
@@ -239,29 +264,149 @@ function VentaPanel() {
         </div>
 
         <aside className="ticket">
-          <h2>Ticket</h2>
-          {lineas.length === 0 ? (
-            <p className="empty">Aún no has agregado productos.</p>
-          ) : (
-            lineas.map((l) => (
-              <div className="ticket-line" key={l.producto.idProducto}>
-                <span>{l.producto.nombre}</span>
-                <span className="cant">×{l.cantidad}</span>
-                <span className="subtotal">{money(l.cantidad * l.producto.precioUnitario)}</span>
+          {mostrandoRecibo ? (
+            <>
+              <h2>Última venta registrada</h2>
+              <p className="feedback ok" style={{ marginTop: 0 }}>
+                {venta!.idVenta} · {estadoLabel(venta!.estado)}
+              </p>
+              {venta!.detalles.map((d, i) => (
+                <div className="ticket-line" key={`${d.idProducto}-${i}`}>
+                  <span>{d.idProducto}</span>
+                  <span className="cant">×{d.cantidad}</span>
+                  <span className="subtotal">{money(d.subtotal)}</span>
+                </div>
+              ))}
+              <div className="ticket-total">
+                <span className="label">Total</span>
+                <span className="value">{money(venta!.total)}</span>
               </div>
-            ))
+              <p className="subtitle" style={{ marginTop: "0.75rem" }}>
+                Ajusta cantidades a la izquierda para registrar otra venta.
+              </p>
+            </>
+          ) : (
+            <>
+              <h2>Ticket</h2>
+              {lineas.length === 0 ? (
+                <p className="empty">Aún no has agregado productos.</p>
+              ) : (
+                lineas.map((l) => (
+                  <div className="ticket-line" key={l.producto.idProducto}>
+                    <span>{l.producto.nombre}</span>
+                    <span className="cant">×{l.cantidad}</span>
+                    <span className="subtotal">{money(l.cantidad * l.producto.precioUnitario)}</span>
+                  </div>
+                ))
+              )}
+              <div className="ticket-total">
+                <span className="label">Total</span>
+                <span className="value">{money(total)}</span>
+              </div>
+              <button onClick={enviarVenta} disabled={lineas.length === 0 || cargando}>
+                {cargando ? <Loader size="sm" label="Registrando…" /> : "Registrar venta"}
+              </button>
+            </>
           )}
-          <div className="ticket-total">
-            <span className="label">Total</span>
-            <span className="value">{money(total)}</span>
-          </div>
-          <button onClick={enviarVenta} disabled={lineas.length === 0 || cargando}>
-            {cargando ? <Loader size="sm" label="Registrando…" /> : "Registrar venta"}
-          </button>
-          {venta && <p className="feedback ok">Venta {venta.idVenta} confirmada.</p>}
           {error && <p className="feedback error">{error}</p>}
         </aside>
       </div>
+    </>
+  );
+}
+
+function HistorialPanel() {
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [idCliente, setIdCliente] = useState("");
+  const [ventas, setVentas] = useState<Venta[] | null>(null);
+  const [error, setError] = useState("");
+  const [cargandoClientes, setCargandoClientes] = useState(true);
+  const [cargandoHistorial, setCargandoHistorial] = useState(false);
+
+  useEffect(() => {
+    listarClientes()
+      .then((data) => {
+        setClientes(data);
+        if (data.length) setIdCliente(data[0].idCliente);
+      })
+      .catch((e) => setError((e as Error).message))
+      .finally(() => setCargandoClientes(false));
+  }, []);
+
+  const consultar = async () => {
+    if (!idCliente) return;
+    setError("");
+    setCargandoHistorial(true);
+    try {
+      const data = await consultarHistorialCliente(idCliente);
+      setVentas(data);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setCargandoHistorial(false);
+    }
+  };
+
+  return (
+    <>
+      <h1>Historial de ventas</h1>
+      <p className="subtitle">Consulta las ventas ya registradas para un cliente (GET /api/ventas/historial).</p>
+
+      <div className="field-row">
+        <div className="field">
+          <span className="field-label">Cliente</span>
+          <select value={idCliente} onChange={(e) => setIdCliente(e.target.value)} disabled={cargandoClientes}>
+            {clientes.length === 0 && <option value="">{cargandoClientes ? "Cargando…" : "Sin clientes"}</option>}
+            {clientes.map((c) => (
+              <option key={c.idCliente} value={c.idCliente}>
+                {c.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+        <button onClick={consultar} disabled={cargandoClientes || cargandoHistorial || !idCliente}>
+          {cargandoHistorial ? <Loader size="sm" /> : "Consultar historial"}
+        </button>
+      </div>
+
+      {cargandoHistorial && (
+        <p className="subtitle">
+          <Loader size="sm" label="Consultando… el backend puede tardar unos segundos si estaba dormido." />
+        </p>
+      )}
+
+      {ventas !== null && !cargandoHistorial && (
+        ventas.length === 0 ? (
+          <p className="subtitle">Este cliente todavía no tiene ventas registradas.</p>
+        ) : (
+          <div className="historial-list">
+            {ventas.map((v) => (
+              <div className="historial-card" key={v.idVenta}>
+                <div className="historial-head">
+                  <strong>{v.idVenta}</strong>
+                  <span className={`chip ${estadoClass(v.estado)}`}>{estadoLabel(v.estado)}</span>
+                </div>
+                <div className="subtitle">
+                  {new Date(v.fecha).toLocaleString("es-CO")} · vendedor {v.idVendedor}
+                </div>
+                {v.detalles.map((d, i) => (
+                  <div className="ticket-line" key={`${v.idVenta}-${d.idProducto}-${i}`}>
+                    <span>{d.idProducto}</span>
+                    <span className="cant">×{d.cantidad}</span>
+                    <span className="subtotal">{money(d.subtotal)}</span>
+                  </div>
+                ))}
+                <div className="ticket-total">
+                  <span className="label">Total</span>
+                  <span className="value">{money(v.total)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      )}
+
+      {error && <p className="error">{error}</p>}
     </>
   );
 }
@@ -280,10 +425,17 @@ function App() {
           <button className={tab === "venta" ? "active" : ""} onClick={() => setTab("venta")}>
             Registrar venta
           </button>
+          <button className={tab === "historial" ? "active" : ""} onClick={() => setTab("historial")}>
+            Historial
+          </button>
         </nav>
       </header>
 
-      <main>{tab === "auth" ? <AutorizacionPanel /> : <VentaPanel />}</main>
+      <main>
+        {tab === "auth" && <AutorizacionPanel />}
+        {tab === "venta" && <VentaPanel />}
+        {tab === "historial" && <HistorialPanel />}
+      </main>
     </div>
   );
 }

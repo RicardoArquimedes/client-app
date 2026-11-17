@@ -45,6 +45,10 @@ export function registrarVenta(
   }).then((r) => handle<Venta>(r));
 }
 
+export function consultarHistorialCliente(idCliente: string) {
+  return fetch(`${BASE_URL}/api/ventas/historial/${idCliente}`).then((r) => handle<Venta[]>(r));
+}
+
 // RF3 - Bodega
 export function listarProductosDisponibles() {
   return fetch(`${BASE_URL}/api/bodega/productos`).then((r) => handle<Producto[]>(r));

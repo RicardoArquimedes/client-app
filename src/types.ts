@@ -32,7 +32,8 @@ export interface Venta {
   idCliente: string;
   fecha: string;
   total: number;
-  estado: string;
+  // El backend serializa el enum EstadoVenta como número (ver estadoLabel en App.tsx).
+  estado: number;
   detalles: DetalleVenta[];
 }
 

@@ -410,3 +410,37 @@ main .ok {
     transform: rotate(360deg);
   }
 }
+
+/* ---------- Historial ---------- */
+
+.historial-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.historial-card {
+  background: var(--white);
+  border: 1px solid var(--tint);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+}
+
+.historial-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-num);
+  margin-bottom: 0.25rem;
+}
+
+.chip {
+  font-size: 0.75rem;
+  font-family: var(--font-ui);
+  text-transform: capitalize;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: var(--tint);
+  color: var(--ink);
+}
