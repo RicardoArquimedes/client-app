@@ -8,6 +8,7 @@ import {
   registrarVenta,
 } from "./api";
 import type { Cliente, Producto, Venta } from "./types";
+import { Loader } from "./components/Loader";
 
 type Tab = "auth" | "venta";
 
@@ -21,26 +22,33 @@ function AutorizacionPanel() {
   const [fechaVencimiento, setFechaVencimiento] = useState("2026-12-31");
   const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState("");
+  const [cargando, setCargando] = useState<"consultar" | "autorizar" | null>(null);
 
   const consultar = async () => {
     setError("");
+    setCargando("consultar");
     try {
       const res = await consultarAutorizacion(idVendedor);
       setAutorizado(res.autorizado);
     } catch (e) {
       setError((e as Error).message);
+    } finally {
+      setCargando(null);
     }
   };
 
   const autorizar = async () => {
     setError("");
     setMensaje("");
+    setCargando("autorizar");
     try {
       await autorizarVendedor(idVendedor, fechaVencimiento);
       setMensaje(`${idVendedor} queda autorizado hasta ${fechaVencimiento}.`);
-      await consultar();
+      await consultarAutorizacion(idVendedor).then((res) => setAutorizado(res.autorizado));
     } catch (e) {
       setError((e as Error).message);
+    } finally {
+      setCargando(null);
     }
   };
 
@@ -54,10 +62,18 @@ function AutorizacionPanel() {
           <span className="field-label">Vendedor</span>
           <input value={idVendedor} onChange={(e) => setIdVendedor(e.target.value)} placeholder="V01" />
         </div>
-        <button onClick={consultar}>Consultar</button>
+        <button onClick={consultar} disabled={cargando !== null}>
+          {cargando === "consultar" ? <Loader size="sm" /> : "Consultar"}
+        </button>
       </div>
 
-      {autorizado !== null && (
+      {cargando === "consultar" && (
+        <p className="subtitle">
+          <Loader size="sm" label="Consultando… el backend puede tardar unos segundos si estaba dormido." />
+        </p>
+      )}
+
+      {autorizado !== null && cargando === null && (
         <div className={`status-banner ${autorizado ? "si" : "no"}`}>
           <span className="dot" />
           <div>
@@ -80,8 +96,8 @@ function AutorizacionPanel() {
           <span className="field-label">Vigente hasta</span>
           <input type="date" value={fechaVencimiento} onChange={(e) => setFechaVencimiento(e.target.value)} />
         </div>
-        <button className="secondary" onClick={autorizar}>
-          Autorizar vendedor
+        <button className="secondary" onClick={autorizar} disabled={cargando !== null}>
+          {cargando === "autorizar" ? <Loader size="sm" /> : "Autorizar vendedor"}
         </button>
       </div>
 
@@ -100,18 +116,27 @@ function VentaPanel() {
   const [venta, setVenta] = useState<Venta | null>(null);
   const [error, setError] = useState("");
   const [cargando, setCargando] = useState(false);
+  const [cargandoInicial, setCargandoInicial] = useState(true);
 
   useEffect(() => {
+    let pendientes = 2;
+    const marcarListo = () => {
+      pendientes -= 1;
+      if (pendientes === 0) setCargandoInicial(false);
+    };
+
     listarClientes()
       .then((data) => {
         setClientes(data);
         if (data.length) setIdCliente(data[0].idCliente);
       })
-      .catch((e) => setError((e as Error).message));
+      .catch((e) => setError((e as Error).message))
+      .finally(marcarListo);
 
     listarProductosDisponibles()
       .then(setProductos)
-      .catch((e) => setError((e as Error).message));
+      .catch((e) => setError((e as Error).message))
+      .finally(marcarListo);
   }, []);
 
   const lineas = useMemo(
@@ -160,6 +185,12 @@ function VentaPanel() {
       <h1>Registrar venta</h1>
       <p className="subtitle">Elige el cliente, ajusta cantidades y confirma — el ticket se arma a la derecha.</p>
 
+      {cargandoInicial && (
+        <p className="subtitle">
+          <Loader label="Cargando clientes y productos… el backend puede tardar unos segundos si estaba dormido." />
+        </p>
+      )}
+
       <div className="field-row">
         <div className="field">
           <span className="field-label">Vendedor</span>
@@ -167,8 +198,12 @@ function VentaPanel() {
         </div>
         <div className="field">
           <span className="field-label">Cliente</span>
-          <select value={idCliente} onChange={(e) => setIdCliente(e.target.value)}>
-            {clientes.length === 0 && <option value="">Sin clientes — ¿está el backend corriendo?</option>}
+          <select value={idCliente} onChange={(e) => setIdCliente(e.target.value)} disabled={cargandoInicial}>
+            {clientes.length === 0 && (
+              <option value="">
+                {cargandoInicial ? "Cargando…" : "Sin clientes — ¿está el backend corriendo?"}
+              </option>
+            )}
             {clientes.map((c) => (
               <option key={c.idCliente} value={c.idCliente}>
                 {c.nombre}
@@ -196,8 +231,10 @@ function VentaPanel() {
               />
             </div>
           ))}
-          {productos.length === 0 && !error && (
-            <p className="subtitle">Cargando productos disponibles…</p>
+          {productos.length === 0 && !error && cargandoInicial && (
+            <p className="subtitle">
+              <Loader size="sm" label="Cargando productos disponibles…" />
+            </p>
           )}
         </div>
 
@@ -219,7 +256,7 @@ function VentaPanel() {
             <span className="value">{money(total)}</span>
           </div>
           <button onClick={enviarVenta} disabled={lineas.length === 0 || cargando}>
-            {cargando ? "Registrando…" : "Registrar venta"}
+            {cargando ? <Loader size="sm" label="Registrando…" /> : "Registrar venta"}
           </button>
           {venta && <p className="feedback ok">Venta {venta.idVenta} confirmada.</p>}
           {error && <p className="feedback error">{error}</p>}

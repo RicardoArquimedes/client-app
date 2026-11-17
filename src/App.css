@@ -375,3 +375,38 @@ main .ok {
   font-size: 0.88rem;
   margin-top: 0.75rem;
 }
+
+/* ---------- Loader ---------- */
+
+.loader {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.loader-spin {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0, 169, 165, 0.25);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: loader-rotate 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+.loader--sm .loader-spin {
+  width: 12px;
+  height: 12px;
+  border-width: 2px;
+}
+
+.loader-label {
+  font-size: 0.85rem;
+  color: var(--line);
+}
+
+@keyframes loader-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
